@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edexcel IAL Past Papers · Offline</title>
+<style>
+/* ============================== tokens ============================== */
+:root{
+  --bg:#0a0e1d; --card:rgba(255,255,255,.045); --card-border:rgba(255,255,255,.09);
+  --text:#e9edfb; --muted:#9aa5c9; --faint:#5d6a92;
+  --accent:#6366f1; --accent-2:#8b5cf6;
+  --qp:#818cf8; --ms:#34d399; --er:#fbbf24;
+  --shadow:0 24px 70px -30px rgba(0,0,0,.75);
+}
+html[data-theme="light"]{
+  --bg:#eef1fb; --card:#ffffff; --card-border:#dde3f2; --text:#141a30; --muted:#57618a; --faint:#8b95b8;
+  --shadow:0 24px 70px -35px rgba(30,45,120,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .45s,color .45s}
+button{font-family:inherit}
+.mono{font-family:ui-monospace,'Cascadia Code','JetBrains Mono',Consolas,monospace}
+::selection{background:rgba(99,102,241,.35)}
+
+/* ============================== background ============================== */
+.bg{position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(1200px 800px at 85% -10%, rgba(99,102,241,.16), transparent 60%),
+  radial-gradient(1000px 700px at -10% 110%, rgba(16,185,129,.10), transparent 60%), var(--bg);
+  transition:background .45s}
+.bg .blob{position:absolute;border-radius:50%;filter:blur(130px);opacity:.42;will-change:transform}
+.bg .b1{width:560px;height:560px;background:#6366f1;top:-160px;left:-140px;animation:drift1 34s ease-in-out infinite alternate}
+.bg .b2{width:500px;height:500px;background:#8b5cf6;bottom:-200px;right:-120px;animation:drift2 42s ease-in-out infinite alternate}
+.bg .b3{width:380px;height:380px;background:#0ea5e9;top:42%;left:58%;opacity:.3;animation:drift1 50s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(90px,60px) scale(1.18)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-80px,-50px) scale(1.14)}}
+
+/* ============================== layout ============================== */
+.wrap{max-width:1120px;margin:0 auto;padding:40px 20px 90px}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.rise{animation:rise .65s cubic-bezier(.22,1,.36,1) both;animation-delay:var(--d,0s)}
+@keyframes popIn{0%{opacity:0;transform:scale(.86)}60%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:30px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:16px}
+.logo-icon{width:56px;height:56px;border-radius:18px;flex:none;background:linear-gradient(135deg,#6366f1,#a855f7 60%,#38bdf8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;box-shadow:0 14px 34px -10px rgba(99,102,241,.65);animation:logoFloat 6s ease-in-out infinite}
+@keyframes logoFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
+h1{font-size:clamp(1.4rem,3.2vw,2rem);font-weight:800;line-height:1.1;
+  background:linear-gradient(100deg,#818cf8 10%,#c084fc 50%,#38bdf8 90%);background-size:220% 100%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  animation:shineText 9s ease-in-out infinite alternate}
+@keyframes shineText{from{background-position:0% 0}to{background-position:100% 0}}
+.subtitle{color:var(--muted);font-size:.9rem;margin-top:6px}
+.subtitle b{color:var(--text)}
+.header-actions{display:flex;gap:10px;align-items:center}
+.icon-btn{width:44px;height:44px;border-radius:14px;border:1px solid var(--card-border);background:var(--card);color:var(--muted);cursor:pointer;font-size:1.05rem;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px)}
+.icon-btn:hover{transform:translateY(-3px) rotate(6deg);border-color:var(--accent);color:var(--text)}
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.stat{flex:1;min-width:140px;background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:14px 18px;backdrop-filter:blur(12px);position:relative;overflow:hidden;transition:transform .25s}
+.stat:hover{transform:translateY(-3px)}
+.stat .num{font-weight:800;font-size:1.5rem;font-variant-numeric:tabular-nums}
+.stat .lbl{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+/* ============================== cards / steps ============================== */
+.card{background:var(--card);border:1px solid var(--card-border);border-radius:20px;padding:24px;margin-bottom:20px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+.step-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.step-num{width:30px;height:30px;flex:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:800;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+.step-title{font-weight:700;font-size:1.02rem}
+.step-hint{color:var(--faint);font-size:.82rem;margin-left:auto}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;border:1.5px solid var(--card-border);background:rgba(255,255,255,.03);color:var(--muted);font-size:.9rem;font-weight:500;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s,color .18s;user-select:none}
+.chip:hover{transform:translateY(-2px);border-color:var(--accent);color:var(--text)}
+.chip:active{transform:scale(.95)}
+.chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.chip .cnt{font-family:ui-monospace,Consolas,monospace;font-size:.7rem;opacity:.75}
+.chip.on{color:#fff;border-color:transparent;box-shadow:0 10px 26px -10px var(--chip-c,rgba(99,102,241,.6));animation:popIn .3s cubic-bezier(.22,1,.36,1);background:linear-gradient(135deg,var(--chip-c,#6366f1),#a855f7)}
+.chip.disabled{opacity:.35;pointer-events:none}
+.chip.legacy{border-style:dashed}
+.chip.mono{font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+
+/* ============================== results ============================== */
+.results-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.results-title{font-weight:700;font-size:1.05rem}
+.session-badge{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;padding:5px 12px;border-radius:999px;border:1px solid var(--card-border);color:var(--muted)}
+.tabs{display:flex;gap:6px;margin-left:auto;background:rgba(0,0,0,.22);border:1px solid var(--card-border);border-radius:12px;padding:4px}
+html[data-theme="light"] .tabs{background:rgba(20,30,70,.05)}
+.tab{padding:7px 14px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;gap:6px;align-items:center}
+.tab:hover{color:var(--text)}
+.tab.on{background:var(--tab-c);color:#fff}
+.tab .n{font-family:ui-monospace,Consolas,monospace;font-size:.7rem;opacity:.85}
+
+.papers{display:flex;flex-direction:column;gap:10px}
+.paper{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid var(--card-border);background:rgba(255,255,255,.03);cursor:pointer;position:relative;overflow:hidden;transition:transform .22s,box-shadow .22s,border-color .22s;animation:rise .5s cubic-bezier(.22,1,.36,1) both;animation-delay:var(--d,0s)}
+.paper:hover{transform:translateY(-3px);border-color:var(--row-c);box-shadow:0 16px 34px -18px var(--row-c)}
+.paper::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.05) 50%,transparent 70%);transform:translateX(-120%);transition:transform .7s}
+.paper:hover::before{transform:translateX(120%)}
+.paper.missing{opacity:.55;cursor:default}
+.paper.missing:hover{transform:none;border-color:var(--card-border)}
+.paper-icon{width:46px;height:46px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#fff;background:var(--row-c)}
+.paper:hover .paper-icon{animation:wiggle .4s ease}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-9deg)}75%{transform:rotate(6deg)}}
+.paper-main{flex:1;min-width:0}
+.paper-title{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.paper-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.tag{font-family:ui-monospace,Consolas,monospace;font-size:.68rem;padding:2.5px 8px;border-radius:6px;border:1px solid var(--card-border);color:var(--muted)}
+.tag.unit-tag{border-color:var(--row-c);color:var(--row-c)}
+.tag.sess{display:none}
+.all-mode .tag.sess{display:inline-flex}
+.paper-side{display:flex;align-items:center;gap:8px;flex:none}
+.mini-btn{padding:8px 12px;border-radius:9px;border:1px solid var(--card-border);background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}
+.mini-btn:hover{border-color:var(--row-c);color:var(--row-c);transform:translateY(-1px)}
+.mini-btn.primary{background:var(--row-c);border-color:transparent;color:#fff}
+.mini-btn.primary:hover{color:#fff;filter:brightness(1.1)}
+.empty{text-align:center;padding:46px 20px;color:var(--muted)}
+.empty .big{font-size:2.6rem;margin-bottom:12px;display:block;animation:logoFloat 4s ease-in-out infinite}
+
+.quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px dashed var(--card-border)}
+.qbtn{padding:10px 15px;border-radius:10px;border:1.5px solid var(--card-border);background:transparent;color:var(--muted);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:7px}
+.qbtn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px)}
+.qbtn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+.qbtn.split{background:linear-gradient(90deg,var(--qp),var(--ms));border-color:transparent;color:#fff}
+.qbtn.split:hover{box-shadow:0 12px 26px -10px rgba(99,102,241,.6)}
+
+/* ============================== viewer ============================== */
+.viewer{position:fixed;inset:0;z-index:60;display:none}
+.viewer.open{display:block}
+.viewer-backdrop{position:absolute;inset:0;background:rgba(4,6,18,.72);backdrop-filter:blur(10px);animation:fadeIn .3s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.viewer-panel{position:absolute;inset:20px;background:#12182f;border:1px solid var(--card-border);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 120px -30px rgba(0,0,0,.8);animation:panelUp .45s cubic-bezier(.22,1,.36,1) both}
+html[data-theme="light"] .viewer-panel{background:#f7f9ff}
+@keyframes panelUp{from{opacity:0;transform:translateY(46px) scale(.97)}to{opacity:1;transform:none}}
+.viewer-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--card-border);flex-wrap:wrap}
+.viewer-title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.95rem;min-width:0;flex:1}
+.viewer-title .vt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{padding:4px 10px;border-radius:7px;font-family:ui-monospace,Consolas,monospace;font-size:.72rem;font-weight:700;color:#fff;flex:none}
+.badge.qp{background:var(--qp)} .badge.ms{background:var(--ms)} .badge.er{background:var(--er)}
+.badge.both{background:linear-gradient(90deg,var(--qp),var(--ms))}
+.viewer-tools{display:flex;gap:8px;flex-wrap:wrap}
+.tool{padding:8px 13px;border-radius:9px;border:1px solid var(--card-border);background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;text-decoration:none}
+.tool:hover{border-color:var(--accent);color:var(--text)}
+.tool.danger:hover{border-color:#ef4444;color:#ef4444}
+.frames{flex:1;display:flex;min-height:0;position:relative;padding:14px;gap:10px}
+.frame{flex:1;display:flex;flex-direction:column;border:1.5px solid var(--card-border);border-radius:14px;overflow:hidden;background:#33394d;position:relative;min-width:0}
+.frame.split{flex:none}
+.frame.split.left{width:calc(var(--split,50%) - 13px)}
+.frame.split.right{width:calc(100% - var(--split,50%) - 13px)}
+.divider{width:16px;flex:none;cursor:col-resize;display:flex;align-items:center;justify-content:center;color:var(--faint);border-radius:8px;transition:background .2s}
+.divider:hover{background:rgba(99,102,241,.15)}
+.divider::after{content:'';width:3px;height:46px;border-radius:2px;background:var(--card-border)}
+.frame .f-head{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--card-border);font-size:.8rem;font-weight:600;flex-wrap:wrap}
+.frame .f-head .spacer{flex:1}
+.frame .f-link{color:var(--muted);text-decoration:none;font-size:.75rem;font-weight:600;padding:4px 10px;border:1px solid var(--card-border);border-radius:8px}
+.frame .f-link:hover{color:var(--text);border-color:var(--accent)}
+.frame iframe{flex:1;width:100%;border:none;background:#3c4258}
+.loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#33394d;color:#cdd4ea;z-index:2;pointer-events:none}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#818cf8;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================== misc ============================== */
+.notice{display:flex;gap:12px;align-items:flex-start;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.35);border-radius:14px;padding:13px 16px;margin-bottom:20px;font-size:.86rem;line-height:1.55}
+.notice b{color:#38bdf8}
+footer{text-align:center;color:var(--faint);font-size:.8rem;line-height:1.8;padding-top:8px}
+.toast{position:fixed;bottom:28px;left:50%;transform:translate(-50%,90px);background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:600;padding:12px 24px;border-radius:13px;opacity:0;transition:all .35s cubic-bezier(.22,1,.36,1);z-index:99;box-shadow:0 16px 44px -12px rgba(16,185,129,.55);font-size:.9rem}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.hidden{display:none !important}
+.skeleton{border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:sk 1.2s linear infinite;height:44px;flex:1;min-width:120px}
+@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
+
+@media (max-width:640px){
+  .viewer-panel{inset:8px}
+  .frames{flex-direction:column;overflow-y:auto}
+  .frame.split.left,.frame.split.right{width:auto}
+  .divider{display:none}
+  .paper-title{white-space:normal}
+  .tabs{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<div class="wrap">
+  <header class="rise">
+    <div class="brand">
+      <div class="logo-icon">🎓</div>
+      <div>
+        <h1>Edexcel IAL Past Papers</h1>
+        <p class="subtitle">100% offline · every PDF stored locally · <b>no network, no waiting</b></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="missingBtn" title="Toggle not-downloaded entries">👻</button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <div class="stats-row rise" style="--d:.05s">
+    <div class="stat"><div class="num" id="statPapers">—</div><div class="lbl">PDFs on disk</div></div>
+    <div class="stat"><div class="num" id="statSubjects">—</div><div class="lbl">Subjects</div></div>
+    <div class="stat"><div class="num" id="statSessions">—</div><div class="lbl">Exam sessions</div></div>
+    <div class="stat"><div class="num" id="statCatalog">—</div><div class="lbl">In catalogue</div></div>
+  </div>
+
+  <div class="notice rise" id="offlineNotice" style="--d:.08s">
+    <span>📦</span>
+    <div><b>Fully offline.</b> Papers load instantly from the <code class="mono">papers/</code> folder next to this file. Papers not yet downloaded are hidden — press the 👻 button to reveal them (they link to Pearson's site). Run <code class="mono">python downloader.py</code> to fetch missing files.</div>
+  </div>
+
+  <!-- STEP 1 · SUBJECT -->
+  <div class="card rise" style="--d:.1s">
+    <div class="step-head">
+      <span class="step-num">1</span><span class="step-title">Choose a subject</span>
+      <span class="step-hint" id="subjectHint"></span>
+    </div>
+    <div class="chips" id="subjectChips"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  </div>
+
+  <!-- STEP 2 · UNIT -->
+  <div class="card rise hidden" id="unitCard" style="--d:.16s">
+    <div class="step-head">
+      <span class="step-num">2</span><span class="step-title">Choose a unit</span>
+      <span class="step-hint" id="unitHint"></span>
+    </div>
+    <div class="chips" id="unitChips"></div>
+  </div>
+
+  <!-- STEP 3 · SESSION -->
+  <div class="card rise hidden" id="sessionCard" style="--d:.22s">
+    <div class="step-head">
+      <span class="step-num">3</span><span class="step-title">Choose a session</span>
+      <span class="step-hint" id="sessionHint"></span>
+    </div>
+    <div class="chips" id="yearChips" style="margin-bottom:10px"></div>
+    <div class="chips" id="monthChips"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="card rise hidden" id="resultsCard" style="--d:.28s">
+    <div class="results-head">
+      <span class="results-title" id="resultsTitle">Papers</span>
+      <span class="session-badge" id="sessionBadge"></span>
+      <div class="tabs" id="docTabs">
+        <button class="tab on" data-tab="all" style="--tab-c:#6366f1">All <span class="n" id="nAll">0</span></button>
+        <button class="tab" data-tab="QP" style="--tab-c:var(--qp)">QP <span class="n" id="nQP">0</span></button>
+        <button class="tab" data-tab="MS" style="--tab-c:var(--ms)">MS <span class="n" id="nMS">0</span></button>
+        <button class="tab" data-tab="ER" style="--tab-c:var(--er)">ER <span class="n" id="nER">0</span></button>
+      </div>
+    </div>
+    <div class="papers" id="papersList"></div>
+    <div class="quick-actions" id="quickActions"></div>
+  </div>
+
+  <div class="card hidden" id="onboarding">
+    <div class="empty"><span class="big">📡</span>
+      <b>Nothing downloaded yet.</b><br><br>
+      Run <code class="mono">python downloader.py</code> in this folder, then<br>
+      <code class="mono">python build-viewer.py</code> to regenerate this page, then reload.</div>
+  </div>
+
+  <footer class="rise" style="--d:.34s">
+    Papers © Pearson Education Ltd · offline copies for personal educational use · catalogue from Pearson's official past-papers portal
+  </footer>
+</div>
+
+<!-- VIEWER -->
+<div class="viewer" id="viewer">
+  <div class="viewer-backdrop" id="viewerBackdrop"></div>
+  <div class="viewer-panel">
+    <div class="viewer-head">
+      <div class="viewer-title">
+        <span class="badge qp" id="vBadge">QP</span>
+        <span class="vt" id="vTitle">Paper</span>
+      </div>
+      <div class="viewer-tools">
+        <a class="tool" id="origBtn" target="_blank" rel="noopener" hidden>🌐 Official link</a>
+        <button class="tool" id="newtabBtn">⧉ New tab</button>
+        <button class="tool danger" id="closeBtn">✕ Close</button>
+      </div>
+    </div>
+    <div class="frames" id="frames"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATALOG = __CATALOG__;
+</script>
+<script>
+'use strict';
+/* ============================================================
+   data — CATALOG = {generatedAt, count, presentCount, papers:[
+     {s,u,ul,ss,sl,t,ti,f,p,v,z,o,l} ]  (short keys, see build-viewer.py)
+============================================================ */
+const S = { subject:null, unit:null, session:null, tab:'all', year:null, month:null, showMissing:false };
+const MONTHS = {'01':'January','06':'June','10':'October'};
+const MONTH_KEYS = ['01','06','10'];
+const SUBJECT_COLORS = {
+  'Mathematics':'#6366f1','Further Mathematics':'#a855f7','Physics':'#0ea5e9','Chemistry':'#10b981',
+  'Biology':'#22c55e','Economics':'#f59e0b','Business':'#f97316','Accounting':'#14b8a6',
+  'History':'#f43f5e','Geography':'#06b6d4','Information Technology':'#64748b','Law':'#eab308',
+  'French':'#3b82f6','German':'#8b5cf6','Greek':'#38bdf8','Arabic':'#d97706',
+  'English Literature':'#ec4899','English Language':'#f43f5e','Psychology':'#d946ef','Business Studies':'#f97316',
+};
+const DOC_COLORS = {QP:'var(--qp)', MS:'var(--ms)', ER:'var(--er)'};
+const DOC_META = {QP:{label:'Question paper', icon:'📄'}, MS:{label:'Mark scheme', icon:'✅'}, ER:{label:'Examiner report', icon:'🧭'}};
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+function hashColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return `hsl(${h%360} 72% 60%)`; }
+const colorFor = subj => SUBJECT_COLORS[subj] || hashColor(subj);
+let toastTimer=null;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400); }
+async function copyText(text){ try{ await navigator.clipboard.writeText(text); toast('Link copied 📋'); } catch{ prompt('Copy this link:',text); } }
+function sessionLabel(s){ if(!s) return ''; const [y,m]=s.split('-'); return `${MONTHS[m]||''} ${y}`; }
+
+/* ============================================================
+   index
+============================================================ */
+const ALL = CATALOG.papers || [];
+const PRESENT = ALL.filter(x => x.p);
+const visiblePool = () => S.showMissing ? ALL : PRESENT;
+
+const subjects = [];
+{
+  const bySub = new Map();
+  for (const x of ALL){ const k = x.s || '?'; if(!bySub.has(k)) bySub.set(k,[]); bySub.get(k).push(x); }
+  for (const [name, list] of bySub){
+    const unitsMap = new Map();
+    for (const x of list){
+      const uk = x.u || '?';
+      if(!unitsMap.has(uk)) unitsMap.set(uk, {code:uk, label:x.ul||uk, sessions:new Set(), legacy:false, present:0, catalog:0});
+      const un = unitsMap.get(uk);
+      un.sessions.add(x.ss);
+      if (x.l) un.legacy = true;
+      if (x.p) un.present++;
+      un.catalog++;
+    }
+    const units = [...unitsMap.values()].sort((a,b)=>{
+      const rank = t => { const m=(t.match(/^([A-Za-z]+)/)||['',''])[1]; return {'FP':0,'P':1,'M':2,'S':3,'D':4,'U':5}[m] ?? 6; };
+      const ra=rank(a.label), rb=rank(b.label);
+      if(ra!==rb) return ra-rb;
+      return a.label.localeCompare(b.label, undefined, {numeric:true}) || a.code.localeCompare(b.code);
+    });
+    subjects.push({name, color:colorFor(name), units,
+      present: list.filter(x=>x.p).length, catalog: list.length});
+  }
+  subjects.sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+/* ============================================================
+   stats
+============================================================ */
+function animateNum(el, target){
+  el.textContent='0';
+  const t0=performance.now(), dur=900;
+  const step=now=>{ const k=Math.min(1,(now-t0)/dur); const e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(target*e).toLocaleString(); if(k<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+animateNum($('#statPapers'), PRESENT.length);
+animateNum($('#statSubjects'), subjects.filter(s=>s.present>0).length);
+animateNum($('#statSessions'), new Set(PRESENT.map(x=>x.ss)).size);
+animateNum($('#statCatalog'), ALL.length);
+
+/* ============================================================
+   subject / unit / session rendering
+============================================================ */
+function renderSubjects(){
+  const box = $('#subjectChips'); box.innerHTML='';
+  subjects.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='chip'+(S.subject===s.name?' on':'');
+    b.style.setProperty('--chip-c', s.color);
+    b.style.setProperty('--d', (i*0.04)+'s');
+    b.innerHTML=`<span class="dot" style="background:${s.color}"></span>${s.name}<span class="cnt">${s.present}📄</span>`;
+    b.onclick=()=>selectSubject(s.name);
+    box.appendChild(b);
+  });
+  $('#subjectHint').textContent = `${subjects.filter(s=>s.present).length} with files on disk`;
+}
+function selectSubject(name){
+  S.subject=name; S.unit=null; S.session=null; S.year=null; S.month=null;
+  renderSubjects(); renderUnits();
+  $('#unitCard').classList.remove('hidden');
+  $('#sessionCard').classList.add('hidden');
+  $('#resultsCard').classList.add('hidden');
+}
+function renderUnits(){
+  const subj=subjects.find(s=>s.name===S.subject);
+  const box=$('#unitChips'); box.innerHTML='';
+  if(!subj) return;
+  subj.units.forEach((u,i)=>{
+    const b=document.createElement('button');
+    b.className='chip mono'+(S.unit===u.code?' on':'')+(u.legacy?' legacy':'');
+    b.style.setProperty('--chip-c', subj.color);
+    b.style.setProperty('--d', (i*0.04)+'s');
+    b.innerHTML=`${u.label}${u.legacy?'<span style="font-size:.6rem;opacity:.7">(old)</span>':''}<span class="cnt">${u.present}/${u.catalog}</span>`;
+    b.title=`${u.label} · ${u.code}`;
+    b.onclick=()=>selectUnit(u.code);
+    box.appendChild(b);
+  });
+  $('#unitHint').textContent = `${subj.units.length} units (present/catalogue)`;
+}
+function unitSessions(unit){
+  return [...new Set(visiblePool().filter(x=>x.s===S.subject && x.u===unit.code).map(x=>x.ss))].sort().reverse();
+}
+function selectUnit(code){
+  const subj=subjects.find(s=>s.name===S.subject);
+  const unit=subj?.units.find(u=>u.code===code);
+  if(!unit) return;
+  S.unit=unit;
+  const sessions=unitSessions(unit);
+  S.session=sessions[0]||null;
+  if(S.session){ S.year=S.session.slice(0,4); S.month=S.session.slice(5,7); }
+  renderUnits(); renderSessions();
+  $('#sessionCard').classList.remove('hidden');
+  renderResults();
+}
+function renderSessions(){
+  const sessions=unitSessions(S.unit);
+  const years=[...new Set(sessions.map(s=>s.slice(0,4)))].sort().reverse();
+  const yBox=$('#yearChips'); yBox.innerHTML='';
+  years.forEach((y,i)=>{
+    const b=document.createElement('button');
+    b.className='chip mono'+(S.year===y?' on':'');
+    b.style.setProperty('--chip-c', colorFor(S.subject));
+    b.style.setProperty('--d',(i*0.03)+'s');
+    b.textContent=y;
+    b.onclick=()=>{ S.year=y; pickBestMonth(); renderSessions(); renderResults(); };
+    yBox.appendChild(b);
+  });
+  const mBox=$('#monthChips'); mBox.innerHTML='';
+  const hasMonth={};
+  sessions.forEach(s=>{ const [y,m]=s.split('-'); if(y===S.year) hasMonth[m]=true; });
+  const allBtn=document.createElement('button');
+  allBtn.className='chip mono'+(S.session==='all'?' on':'');
+  allBtn.style.setProperty('--chip-c', colorFor(S.subject));
+  allBtn.textContent='ALL';
+  allBtn.onclick=()=>{ S.session='all'; S.month=null; renderSessions(); renderResults(); };
+  mBox.appendChild(allBtn);
+  MONTH_KEYS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='chip mono'+(S.session===`${S.year}-${m}`?' on':'')+(!hasMonth[m]?' disabled':'');
+    b.style.setProperty('--chip-c', colorFor(S.subject));
+    b.textContent=MONTHS[m];
+    b.onclick=()=>{ S.session=`${S.year}-${m}`; S.month=m; renderSessions(); renderResults(); };
+    mBox.appendChild(b);
+  });
+  $('#sessionHint').textContent=`${sessions.length} sessions${years.length?` · ${years[0]}–${years[years.length-1]}`:''}`;
+}
+function pickBestMonth(){
+  const sessions=unitSessions(S.unit).filter(s=>s.startsWith(S.year));
+  S.session=sessions[0]||null;
+  S.month=S.session?S.session.slice(5,7):null;
+}
+
+/* ============================================================
+   results
+============================================================ */
+function currentPapers(){
+  if(!S.unit) return [];
+  let ps=visiblePool().filter(x=>x.s===S.subject && x.u===S.unit.code);
+  if(S.session!=='all') ps=ps.filter(x=>x.ss===S.session);
+  return ps;
+}
+function renderResults(){
+  if(!S.unit) return;
+  $('#resultsCard').classList.remove('hidden');
+  const all=currentPapers();
+  const byDoc={QP:[],MS:[],ER:[]};
+  all.forEach(x=>(byDoc[x.t]||(byDoc[x.t]=[])).push(x));
+  const sorted=arr=>arr.slice().sort((a,b)=>((a.v?1:0)-(b.v?1:0))||(a.f||'').localeCompare(b.f||''));
+  $('#nAll').textContent=all.length;
+  $('#nQP').textContent=(byDoc.QP||[]).length;
+  $('#nMS').textContent=(byDoc.MS||[]).length;
+  $('#nER').textContent=(byDoc.ER||[]).length;
+  $('#resultsTitle').innerHTML=`<span style="color:${colorFor(S.subject)}">${S.subject}</span> · ${S.unit.label} <span style="color:var(--faint)">(${S.unit.code})</span>`;
+  $('#sessionBadge').textContent=S.session==='all'?`all ${all.length} papers`:`${sessionLabel(S.session)} · instant local open`;
+
+  const list=$('#papersList'); list.innerHTML='';
+  const show=S.tab==='all'?all:(byDoc[S.tab]||[]);
+  const isAllMode=S.session==='all';
+  list.classList.toggle('all-mode', isAllMode);
+  if(!show.length){
+    const inCatalog=currentPapersRaw().length;
+    const missNote=inCatalog?`<br>These files aren&rsquo;t downloaded yet — run <code class="mono">python downloader.py</code> (or press 👻 to see catalogue entries).`:'';
+    list.innerHTML=`<div class="empty"><span class="big">🕳️</span>No papers here.${missNote}</div>`;
+  }
+  const groups=isAllMode
+    ? [...new Set(show.map(x=>x.ss))].sort().reverse().map(s=>({s, items:sorted(show.filter(x=>x.ss===s))}))
+    : [{s:null, items:sorted(show)}];
+  let gi=0;
+  for(const g of groups){
+    if(g.s){
+      const h=document.createElement('div');
+      h.style.cssText=`font-weight:700;font-size:.92rem;color:var(--muted);margin:12px 2px 0;display:flex;align-items:center;gap:10px`;
+      h.innerHTML=`${sessionLabel(g.s)} <span style="flex:1;height:1px;background:var(--card-border)"></span>`;
+      list.appendChild(h);
+    }
+    g.items.forEach((x,i)=>{
+      const row=document.createElement('div');
+      row.className='paper'+(x.p?'':' missing');
+      row.style.setProperty('--row-c', DOC_COLORS[x.t]);
+      row.style.setProperty('--d',(gi*0.05)+'s');
+      row.tabIndex=0;
+      const variant=x.v?`<span class="tag" title="Alternative/regional/resit variant">${x.v}·var</span>`:'';
+      const size=x.z?`<span class="tag">${x.z>=1000?(x.z/1024).toFixed(1)+' MB':Math.round(x.z)+' KB'}</span>`:'';
+      row.innerHTML=`
+        <div class="paper-icon">${DOC_META[x.t].icon}</div>
+        <div class="paper-main">
+          <div class="paper-title">${x.ti||DOC_META[x.t].label}</div>
+          <div class="paper-meta">
+            <span class="tag unit-tag">${x.t}</span>
+            <span class="tag">${x.u}</span>
+            ${g.s?`<span class="tag sess">${sessionLabel(x.ss)}</span>`:''}
+            ${variant}${size}${x.p?'':`<span class="tag">not downloaded</span>`}
+          </div>
+        </div>
+        <div class="paper-side">
+          ${x.p?`
+            <button class="mini-btn" title="Copy official link" data-copy="${x.o.replace(/"/g,'&quot;')}">📋</button>
+            <a class="mini-btn" title="Open in new tab" href="${x.f}" target="_blank">⧉</a>
+            <a class="mini-btn" title="Download file" href="${x.f}" download>⬇</a>
+            <button class="mini-btn primary" title="View in built-in viewer">👁 View</button>`
+          :`<a class="mini-btn" title="Open the official file on Pearson" href="${x.o}" target="_blank" rel="noopener">🌐 Pearson</a>`}
+        </div>`;
+      if(x.p){
+        row.addEventListener('click', e=>{ if(e.target.closest('button,a')) return; openViewer(x); });
+        row.addEventListener('keydown', e=>{ if(e.key==='Enter') openViewer(x); });
+      }
+      row.querySelector('[data-copy]')?.addEventListener('click', e=>{ e.stopPropagation(); copyText(e.currentTarget.dataset.copy); });
+      list.appendChild(row);
+      gi++;
+    });
+  }
+  renderQuickActions(all, byDoc);
+}
+function currentPapersRaw(){
+  if(!S.unit) return [];
+  let ps=ALL.filter(x=>x.s===S.subject && x.u===S.unit.code);
+  if(S.session!=='all') ps=ps.filter(x=>x.ss===S.session);
+  return ps;
+}
+function renderQuickActions(all, byDoc){
+  const box=$('#quickActions'); box.innerHTML='';
+  const cur=S.session==='all'?null:S.session;
+  const qp=(byDoc.QP||[]).filter(x=>x.p)[0];
+  const ms=(byDoc.MS||[]).filter(x=>x.p)[0];
+  if(cur){
+    if(qp){ const b=document.createElement('button'); b.className='qbtn primary'; b.innerHTML='👁 View question paper'; b.onclick=()=>openViewer(qp); box.appendChild(b); }
+    if(ms){ const b=document.createElement('button'); b.className='qbtn'; b.innerHTML='👁 View mark scheme'; b.onclick=()=>openViewer(ms); box.appendChild(b); }
+    if(qp&&ms){ const b=document.createElement('button'); b.className='qbtn split'; b.innerHTML='🪟 Side by side · QP + MS'; b.onclick=()=>openSplit(qp,ms); box.appendChild(b); }
+  }
+}
+
+/* ============================================================
+   viewer (local PDFs — instant)
+============================================================ */
+function openViewer(x, pair){
+  const v=$('#viewer'), frames=$('#frames'); frames.innerHTML='';
+  const isSplit=!!pair;
+  $('#vBadge').textContent=isSplit?'QP + MS':x.t;
+  $('#vBadge').className='badge '+(isSplit?'both':x.t.toLowerCase());
+  $('#vTitle').textContent=x.ti||DOC_META[x.t].label;
+  $('#origBtn').hidden=!x.o;
+  $('#origBtn').href=x.o||'#';
+  $('#newtabBtn').onclick=()=>window.open(x.f,'_blank');
+  frames.style.setProperty('--split','50%');
+
+  const mk=(item,side)=>{
+    const f=document.createElement('div');
+    f.className='frame'+(isSplit?' split '+side:'');
+    const label=DOC_META[item.t].label;
+    f.innerHTML=`
+      <div class="f-head">
+        <span style="width:9px;height:9px;border-radius:50%;background:${DOC_COLORS[item.t]};display:inline-block"></span>${label}
+        <span class="spacer"></span>
+        <a class="f-link" href="${item.f}" target="_blank">⧉ new tab</a>
+        <a class="f-link" href="${item.f}" download>⬇ save</a>
+        ${item.o?`<a class="f-link" href="${item.o}" target="_blank" rel="noopener">🌐 official</a>`:''}
+      </div>
+      <div class="loader"><div class="spin"></div>Opening…</div>
+      <iframe title="${label}" loading="eager"></iframe>`;
+    frames.appendChild(f);
+    const iframe=f.querySelector('iframe');
+    iframe.addEventListener('load',()=>f.querySelector('.loader').remove());
+    iframe.addEventListener('error',()=>{ f.querySelector('.loader').remove(); });
+    iframe.src=item.f;
+    return f;
+  };
+  if(isSplit){
+    mk(pair.qp,'left');
+    const div=document.createElement('div');
+    div.className='divider'; div.title='Drag to resize';
+    frames.appendChild(div);
+    mk(pair.ms,'right');
+    let dragging=false;
+    div.addEventListener('pointerdown',e=>{ dragging=true; try{ div.setPointerCapture(e.pointerId); }catch{} });
+    window.addEventListener('pointermove',e=>{
+      if(!dragging) return;
+      const rect=frames.getBoundingClientRect();
+      const pct=((e.clientX-rect.left)/rect.width)*100;
+      frames.style.setProperty('--split', Math.min(80,Math.max(20,pct))+'%');
+    });
+    window.addEventListener('pointerup',()=>{ dragging=false; });
+  } else {
+    mk(x,'');
+  }
+  v.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function openSplit(qp, ms){ openViewer(qp, {qp, ms}); }
+function closeViewer(){
+  $('#viewer').classList.remove('open');
+  document.body.style.overflow='';
+  $('#frames').innerHTML='';
+}
+$('#closeBtn').onclick=closeViewer;
+$('#viewerBackdrop').onclick=closeViewer;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('#viewer').classList.contains('open')) closeViewer(); });
+
+/* ============================================================
+   doc tabs / missing toggle / theme
+============================================================ */
+$$('#docTabs .tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('#docTabs .tab').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on'); S.tab=t.dataset.tab; renderResults();
+}));
+$('#missingBtn').addEventListener('click',()=>{
+  S.showMissing=!S.showMissing;
+  $('#missingBtn').style.opacity=S.showMissing?1:.45;
+  toast(S.showMissing?'Showing not-downloaded entries (👻)':'Hiding not-downloaded entries');
+  renderSubjects(); if(S.unit){ renderUnits(); renderSessions(); renderResults(); }
+});
+$('#missingBtn').style.opacity=.45;
+
+const savedTheme=localStorage.getItem('ial-offline-theme');
+if(savedTheme) document.documentElement.setAttribute('data-theme',savedTheme);
+else if(window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme','light');
+const syncTheme=()=>{ $('#themeBtn').textContent=document.documentElement.getAttribute('data-theme')==='dark'?'🌙':'☀️'; };
+syncTheme();
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('ial-offline-theme',next);
+  syncTheme();
+});
+
+/* ============================================================
+   deep links + boot
+============================================================ */
+function applyUrlParams(){
+  const q=new URLSearchParams(location.search);
+  const subj=q.get('subject'), unit=q.get('unit'), session=q.get('session');
+  if(subj && subjects.some(s=>s.name===subj)){
+    selectSubject(subj);
+    if(unit){ selectUnit(unit); }
+    if(session && S.unit){
+      if(unitSessions(S.unit).includes(session)){ S.session=session; S.year=session.slice(0,4); S.month=session.slice(5,7); renderSessions(); renderResults(); }
+      else if(session==='all'){ S.session='all'; renderSessions(); renderResults(); }
+    }
+  }
+}
+renderStatsBoot();
+renderSubjects();
+if(!ALL.length) $('#onboarding').classList.remove('hidden');
+applyUrlParams();
+function renderStatsBoot(){ /* stats already animated above */ }
+</script>
+</body>
+</html>
