@@ -90,6 +90,18 @@ let code = scripts.join('\n;\n') + `
     console.log('missing-toggle OK (pool:', pool().length + ')');
     showMissing = false; refresh();
 
+    // legacy/current merge check (Chemistry Unit 1 = WCH01 + WCH11)
+    selectSubject('Chemistry');
+    const chemUnits = subjects.find(s => s.name === 'Chemistry').units;
+    console.log('Chemistry units (expect 6 merged):', chemUnits.length);
+    const u1 = chemUnits.find(u => u.label === 'Unit 1');
+    if (!u1 || !u1.codes.has('WCH01') || !u1.codes.has('WCH11'))
+      throw new Error('Unit 1 merge failed: ' + JSON.stringify(u1 ? [...u1.codes] : null));
+    selectUnit('WCH01');  // select via the legacy code
+    const ss = unitSessions(S.unit);
+    console.log('merged Unit 1 sessions:', ss.length, 'oldest', ss[ss.length-1], 'newest', ss[0]);
+    if (!ss.includes('2026-01')) throw new Error('merged unit missing 2026 session');
+
     // search index sanity
     if (!UNIT_INDEX || !UNIT_INDEX.length) throw new Error('UNIT_INDEX empty');
     console.log('search index entries:', UNIT_INDEX.length);

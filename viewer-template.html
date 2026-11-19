@@ -417,16 +417,18 @@ const subjects = (() => {
   return [...map].map(([name, list]) => {
     const um = new Map();
     for (const x of list){
-      const code = x.u || '?';
-      if (!um.has(code)) um.set(code, {code, label: x.ul || code, legacy: false, present: 0});
-      const u = um.get(code);
-      if (x.l) u.legacy = true;
+      const label = x.ul || x.u || '?';          // merge legacy + current units by shared label
+      if (!um.has(label)) um.set(label, {code: null, label, codes: new Set(), legacy: false, present: 0});
+      const u = um.get(label);
+      u.codes.add(x.u);
+      if (x.l) u.legacy = true; else u.code = x.u;   // prefer the current spec's code
       if (x.p) u.present++;
     }
-    const units = [...um.values()].sort((a, b) =>
-      rank(a.label) - rank(b.label) ||
-      a.label.localeCompare(b.label, undefined, {numeric: true}) ||
-      a.code.localeCompare(b.code));
+    const units = [...um.values()].map(u => ({...u, code: u.code || [...u.codes][0]}))
+      .sort((a, b) =>
+        rank(a.label) - rank(b.label) ||
+        a.label.localeCompare(b.label, undefined, {numeric: true}) ||
+        a.code.localeCompare(b.code));
     return {name, color: colorFor(name), units, present: list.filter(x => x.p).length};
   }).sort((a, b) => a.name.localeCompare(b.name));
 })();
@@ -435,12 +437,12 @@ const subjects = (() => {
 const S = {subject:null, unit:null, session:null, year:null, tab:'all'};
 
 function unitSessions(unit){
-  return [...new Set(pool().filter(x => x.s === S.subject && x.u === unit.code).map(x => x.ss))].sort().reverse();
+  return [...new Set(pool().filter(x => x.s === S.subject && unit.codes.has(x.u)).map(x => x.ss))].sort().reverse();
 }
 function papersFor(includeMissing = false){
   if (!S.unit) return [];
   return (includeMissing ? ALL : pool()).filter(x =>
-    x.s === S.subject && x.u === S.unit.code && (S.session === 'all' || x.ss === S.session));
+    x.s === S.subject && S.unit.codes.has(x.u) && (S.session === 'all' || x.ss === S.session));
 }
 function syncUrl(){
   const p = new URLSearchParams();
@@ -473,9 +475,8 @@ function renderUnits(){
   if (!subj) return;
   subj.units.forEach((u, i) => {
     const b = chip(`${esc(u.label)}<span class="cnt">${u.present}</span>`, S.unit?.code === u.code, subj.color, i, 'mono');
-    if (u.legacy) b.classList.add('legacy');
     if (!u.present) b.classList.add('dim');
-    b.title = `${u.label} · ${u.code}${u.legacy ? ' · legacy' : ''}`;
+    b.title = `${u.label} · ${[...u.codes].join(' / ')}${u.legacy ? ' · includes legacy spec' : ''}`;
     b.onclick = () => selectUnit(u.code);
     box.appendChild(b);
   });
@@ -532,7 +533,7 @@ function selectSubject(name){
 }
 function selectUnit(code){
   const subj = subjects.find(s => s.name === S.subject);
-  const unit = subj?.units.find(u => u.code === code);
+  const unit = subj?.units.find(u => u.code === code || u.codes.has(code) || u.label === code);
   if (!unit) return;
   S.unit = unit;
   const sess = unitSessions(unit);
@@ -566,7 +567,7 @@ function renderResults(){
   $('#nER').textContent = by.ER.length;
   $$('#docTabs .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === S.tab));
 
-  $('#resultsTitle').innerHTML = `${esc(S.unit.label)} <span class="faint mono">${esc(S.unit.code)}</span>`;
+  $('#resultsTitle').innerHTML = `${esc(S.unit.label)} <span class="faint mono">${esc([...S.unit.codes].join('/'))}</span>`;
   $('#sessionBadge').textContent = S.session === 'all' ? `${all.length} papers` : (sessionLabel(S.session) || '—');
 
   const list = $('#papersList'); list.innerHTML = '';
@@ -696,7 +697,7 @@ addEventListener('pointermove', e => {
 addEventListener('pointerup', () => { dragging = false; });
 
 /* ---------- search ---------- */
-const UNIT_INDEX = subjects.flatMap(s => s.units.map(u => ({subj: s.name, unit: u, hay: `${s.name} ${u.label} ${u.code}`.toLowerCase()})));
+const UNIT_INDEX = subjects.flatMap(s => s.units.map(u => ({subj: s.name, unit: u, hay: `${s.name} ${u.label} ${[...u.codes].join(' ')}`.toLowerCase()})));
 const qInput = $('#q'), sugg = $('#sugg');
 let hits = [];
 function renderSugg(){
@@ -735,7 +736,7 @@ function restore(){
   const subj = st && subjects.find(s => s.name === st.subject);
   if (!subj) return;
   selectSubject(subj.name);
-  if (!st.unit || !subj.units.some(u => u.code === st.unit)) return;
+  if (!st.unit || !subj.units.some(u => u.code === st.unit || u.codes.has(st.unit))) return;
   selectUnit(st.unit);
   if (st.session === 'all'){ S.session = 'all'; renderSessions(); renderResults(); commit(); }
   else if (st.session && unitSessions(S.unit).includes(st.session)){
