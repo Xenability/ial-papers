@@ -21,8 +21,9 @@ ial-offline/
 ```
 
 > **Current state of this folder:** trimmed to **Mathematics · Chemistry · Physics**
-> (1,532 PDFs, ~1.3 GB). To change the set, delete other subject folders under
-> `papers/` and rebuild with
+> (1,832 PDFs, ~1.5 GB, sessions through **June 2026** — 2026 sessions came from
+> Paperlords since Pearson locks them). To change the set, delete other subject
+> folders under `papers/` and rebuild with
 > `python build-viewer.py --subjects Mathematics,Chemistry,Physics` (or no flag
 > for everything).
 
@@ -56,7 +57,25 @@ Open `index.html` — everything works from disk, even without internet.
 **Side-by-side QP + MS** works out of the box (local files, no iframe blocks);
 drag the divider between the two panes to resize.
 
-## 3 · Publish on GitHub
+## 3 · The locked 2026 sessions (Paperlords)
+
+Pearson locks papers from roughly the last 9–12 months for teacher mocks
+(they return HTTP 401), so the official pipeline above can't fetch them.
+[Paperlords](https://www.paperlords.org) archives copies; this script pulls
+only the papers your catalogue is missing (Jan/June 2026 etc.), renames them
+into the standard layout, and writes `paperlords-new.json` with their
+catalogue entries:
+
+```bash
+python paperlords-download.py            # query archive + download missing
+python paperlords-download.py --dry-run  # just list what's missing
+python build-viewer.py --subjects Mathematics,Chemistry,Physics
+```
+
+Afterwards merge `paperlords-new.json`'s `papers` into
+`../ial-papers-v2/manifest.json` (bump `count`) and rebuild.
+
+## 4 · Publish on GitHub
 
 1. Put this whole folder in a repo, e.g.:
 
