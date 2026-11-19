@@ -8,7 +8,7 @@ function makeEl(id){
     style:{ setProperty(){}, cssText:'', opacity:'', overflow:'' },
     dataset:{}, files:[],
     classList:{ add(){}, remove(){}, toggle(){}, contains(){ return false; } },
-    addEventListener(){}, appendChild(){}, remove(){}, scrollIntoView(){}, click(){}, focus(){},
+    addEventListener(){}, appendChild(){}, remove(){}, scrollIntoView(){}, click(){}, focus(){}, blur(){}, select(){},
     setAttribute(){}, getAttribute(){ return null; },
     querySelector(){ return makeEl(id + '-q'); },
     querySelectorAll(){ return []; },
@@ -21,24 +21,35 @@ const documentStub = {
   createElement(){ return makeEl('dyn-' + Math.random().toString(36).slice(2, 8)); },
   querySelectorAll(sel){
     if (sel === '#docTabs .tab') return [makeEl('tab1'), makeEl('tab2'), makeEl('tab3'), makeEl('tab4')];
+    if (sel === '.links a') return [];
+    if (sel === '.reveal') return [];
     return [];
   },
   addEventListener(){},
-  documentElement:{ setAttribute(){}, getAttribute(){ return 'dark'; } },
+  documentElement:{ setAttribute(){}, getAttribute(){ return 'dark'; }, dataset:{}, classList:{toggle(){}} },
   body:{ style:{} },
+  activeElement: null,
 };
 global.window = global;
 global.document = documentStub;
 global.localStorage = { getItem(){ return null; }, setItem(){} };
-global.location = { search:'', protocol:'http:', href:'' };
+global.location = { search:'', protocol:'http:', href:'', pathname:'/index.html' };
 global.matchMedia = () => ({ matches:false, addEventListener(){} });
 global.performance = { now: () => Date.now() };
 global.requestAnimationFrame = fn => setTimeout(() => fn(Date.now()), 16);
 global.addEventListener = () => {};
+global.scrollY = 0;
+global.scrollTo = () => {};
+global.history = { replaceState(){} };
+global.IntersectionObserver = class {
+  constructor(cb){ this.cb = cb; }
+  observe(){ }  // don't fire callbacks at boot
+  unobserve(){ }
+};
 
 const html = fs.readFileSync('index.html', 'utf8');
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-if (scripts.length < 2){ console.error('expected 2 script blocks, got', scripts.length); process.exit(1); }
+if (!scripts.length){ console.error('no script found'); process.exit(1); }
 
 let code = scripts.join('\n;\n') + `
 ;(async () => {
@@ -47,9 +58,9 @@ let code = scripts.join('\n;\n') + `
     if (!CATALOG || !CATALOG.papers || !CATALOG.papers.length) throw new Error('no catalog');
     console.log('catalog:', CATALOG.count, 'present:', CATALOG.presentCount);
     const subjCount = new Set(PRESENT.map(x => x.s)).size;
-    if (subjects.filter(s => s.present > 0).length !== subjCount)
-      throw new Error('subject index mismatch');
+    if (subjects.filter(s => s.present > 0).length !== subjCount) throw new Error('subject index mismatch');
     console.log('subjects with files:', subjCount);
+    if (!ALL.length) throw new Error('ALL empty');
 
     selectSubject('Mathematics');
     if (!subjects.find(s => s.name === 'Mathematics').units.find(u => u.code === 'WMA11'))
@@ -57,30 +68,31 @@ let code = scripts.join('\n;\n') + `
     selectUnit('WMA11');
     console.log('unit WMA11 sessions:', unitSessions(S.unit).length, 'latest:', S.session);
 
-    const qps = currentPapers().filter(x => x.p);
+    const qps = papersFor().filter(x => x.p);
     if (!qps.length) throw new Error('no present papers for latest WMA11 session');
     console.log('present papers (latest session):', qps.length);
 
     // single view
-    const qp = currentPapers().find(x => x.t === 'QP' && x.p);
-    const ms = currentPapers().find(x => x.t === 'MS' && x.p);
+    const qp = papersFor().find(x => x.t === 'QP' && x.p);
+    const ms = papersFor().find(x => x.t === 'MS' && x.p);
     if (qp) openViewer(qp);
     closeViewer();
-    // side-by-side: prefer a real QP+MS pair, else any two present entries
-    if (qp && ms){ openSplit(qp, ms); closeViewer(); console.log('split view (real QP+MS pair) OK'); }
-    else {
-      const any2 = PRESENT.slice(0, 2);
-      if (any2.length === 2){ openSplit(any2[0], any2[1]); closeViewer(); console.log('split view (2 frames + divider) OK'); }
-      else console.log('split view skipped (no pairs available)');
-    }
+    // side-by-side (new API: openViewer(qp, ms))
+    if (qp && ms){ openViewer(qp, ms); closeViewer(); console.log('split view (real QP+MS pair) OK'); }
+    else { console.log('split view skipped (no pair)'); }
 
     // all-sessions mode
     S.session = 'all'; renderSessions(); renderResults();
-    console.log('all-mode papers:', currentPapers().length);
+    console.log('all-mode papers:', papersFor().length);
 
     // missing toggle
-    S.showMissing = true; renderSubjects(); renderUnits(); renderSessions(); renderResults();
-    console.log('missing-toggle OK (visible pool:', visiblePool().length + ')');
+    showMissing = true; refresh();
+    console.log('missing-toggle OK (pool:', pool().length + ')');
+    showMissing = false; refresh();
+
+    // search index sanity
+    if (!UNIT_INDEX || !UNIT_INDEX.length) throw new Error('UNIT_INDEX empty');
+    console.log('search index entries:', UNIT_INDEX.length);
 
     console.log('OFFLINE SMOKE OK');
     process.exit(0);
