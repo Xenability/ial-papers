@@ -33,7 +33,7 @@ const documentStub = {
 global.window = global;
 global.document = documentStub;
 global.localStorage = { getItem(){ return null; }, setItem(){} };
-global.location = { search:'', protocol:'http:', href:'', pathname:'/index.html' };
+global.location = { search:'', protocol:'https:', href:'https://xenability.github.io/ial-papers/', pathname:'/ial-papers/index.html' };
 global.matchMedia = () => ({ matches:false, addEventListener(){} });
 global.performance = { now: () => Date.now() };
 global.requestAnimationFrame = fn => setTimeout(() => fn(Date.now()), 16);
@@ -112,6 +112,11 @@ let code = scripts.join('\n;\n') + `
     const pc = pdfCard(qp);
     if (!pc || !String(pc.innerHTML).includes('Open PDF')) throw new Error('pdfCard broken');
     console.log('mobile pdfCard OK');
+
+    // mobile google-viewer path sanity
+    if (!gview(qp).includes('docs.google.com')) throw new Error('gview failed');
+    if (!absoluteUrl(qp.f).startsWith('https://xenability.github.io/ial-papers/papers/')) throw new Error('absoluteUrl failed: ' + absoluteUrl(qp.f));
+    console.log('mobile google-viewer path OK');
 
     // search index sanity
     if (!UNIT_INDEX || !UNIT_INDEX.length) throw new Error('UNIT_INDEX empty');

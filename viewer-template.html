@@ -658,9 +658,13 @@ function renderQuick(by){
 }
 
 /* ---------- viewer ---------- */
-const isCoarse = matchMedia('(pointer:coarse)').matches;
+const isCoarse = matchMedia('(any-pointer:coarse)').matches || matchMedia('(pointer:coarse)').matches;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const mobilePDF = isCoarse || isIOS;   // iOS/Android can't render multi-page PDFs inline in an iframe
+const isAndroid = /Android/i.test(navigator.userAgent);
+const mobilePDF = isCoarse || isIOS || isAndroid;   // iOS/Android can't render PDFs inline in a plain iframe
+const absoluteUrl = f => { try { return new URL(f, location.href).href; } catch { return f; } };
+const gview = it => (location.protocol === 'http:' || location.protocol === 'https:')
+  ? `https://docs.google.com/viewer?url=${encodeURIComponent(absoluteUrl(it.f))}&embedded=true` : null;
 let dragging = false;
 
 function pdfCard(it){
@@ -678,8 +682,7 @@ function pdfCard(it){
     </div>`;
   return d;
 }
-function frameFor(it, side){
-  if (mobilePDF) return pdfCard(it);
+function iframeFrame(it, side, src){
   const f = document.createElement('div');
   f.className = 'frame' + (side ? ` split ${side}` : '');
   const label = DOC[it.t]?.label || it.t;
@@ -687,7 +690,7 @@ function frameFor(it, side){
     <div class="fhead">
       <span class="sw" style="background:${DOC[it.t]?.color || 'var(--accent)'}"></span>${esc(label)}
       <span class="sp"></span>
-      <a href="${esc(it.f)}" target="_blank" title="New tab">⧉</a>
+      <a href="${esc(it.f)}" target="_blank" title="Open native full-screen">⧉</a>
       <a href="${esc(it.f)}" download title="Save">⬇</a>
       ${it.o ? `<a href="${esc(it.o)}" target="_blank" rel="noopener" title="Official">🌐</a>` : ''}
     </div>
@@ -695,14 +698,18 @@ function frameFor(it, side){
     <iframe title="${esc(label)}"></iframe>`;
   const iframe = f.querySelector('iframe');
   iframe.onload = () => f.querySelector('.loader')?.remove();
-  iframe.src = it.f;
+  iframe.src = src;
   return f;
 }
+function frameFor(it, side){
+  if (mobilePDF){
+    const src = gview(it);            // Google Docs renderer (multi-page) on iOS/Android
+    if (!src) return pdfCard(it);     // file:// fallback — can't embed without a public URL
+    return iframeFrame(it, side, src);
+  }
+  return iframeFrame(it, side, it.f);
+}
 function openViewer(x, second){
-  // Phones/iPads: open a single paper straight in the native full-screen viewer
-  // (an iframe there only shows page 1 or a grey placeholder).
-  if (mobilePDF && !second){ window.open(x.f, '_blank'); return; }
-
   const frames = $('#frames'); frames.innerHTML = '';
   frames.style.setProperty('--split', '50%');
   const badge = $('#vBadge');
