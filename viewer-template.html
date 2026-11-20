@@ -184,7 +184,7 @@ kbd{font-size:.75rem;color:var(--faint);border:1px solid var(--line);border-radi
 .tool{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.18s}
 .tool:hover{border-color:var(--accent);color:var(--text)}
 .tool.danger:hover{border-color:#ef4444;color:#ef4444}
-.frames{flex:1;display:flex;min-height:0;position:relative;padding:12px}
+.frames{flex:1;display:flex;min-height:0;position:relative;padding:12px;gap:12px}
 .frame{flex:1;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#33394d;position:relative;min-width:0}
 .frame.split{flex:none}
 .frame.split.left{width:calc(var(--split,50%) - 8px)}
@@ -200,6 +200,24 @@ kbd{font-size:.75rem;color:var(--faint);border:1px solid var(--line);border-radi
 .frame iframe{flex:1;width:100%;border:0;background:#3c4258}
 .loader{position:absolute;inset:0;display:grid;place-items:center;background:#33394d;z-index:2}
 .spin{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#818cf8;animation:spin 1s linear infinite}
+
+/* ---------- mobile PDF fallback (phones / iPads) ---------- */
+.pdfcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pdfcard .pc-head{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem}
+.pdfcard .pc-head .sp{flex:1}
+.pdfcard .pc-title{font-weight:700;font-size:1.02rem;line-height:1.4}
+.pdfcard .pc-actions{display:flex;gap:10px;flex-wrap:wrap}
+.pc-btn{padding:14px 18px;border-radius:12px;border:1px solid var(--line);color:var(--text);font-weight:700;text-decoration:none;font-size:.92rem;display:inline-flex;align-items:center;gap:8px;transition:.18s}
+.pc-btn:active{transform:scale(.97)}
+.pc-btn.pri{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+
+@media (pointer:coarse){
+  .chip{padding:11px 16px}
+  .mini{padding:10px 13px}
+  .tool{padding:10px 14px}
+  .qbtn{padding:12px 16px}
+  .pc-btn{min-height:48px}
+}
 
 /* ---------- misc ---------- */
 .foot{text-align:center;color:var(--faint);font-size:.8rem;padding:0 20px 40px}
@@ -631,6 +649,7 @@ function row(x, n, inAll){
 }
 function renderQuick(by){
   const box = $('#quickActions'); box.innerHTML = '';
+  btn(box, 'qbtn', '⬇ Download all QP + MS', () => downloadAll());
   if (!S.session || S.session === 'all') return;
   const qp = by.QP.find(x => x.p), ms = by.MS.find(x => x.p);
   if (qp) btn(box, 'qbtn primary', '👁 Question paper', () => openViewer(qp));
@@ -639,8 +658,28 @@ function renderQuick(by){
 }
 
 /* ---------- viewer ---------- */
+const isCoarse = matchMedia('(pointer:coarse)').matches;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const mobilePDF = isCoarse || isIOS;   // iOS/Android can't render multi-page PDFs inline in an iframe
 let dragging = false;
+
+function pdfCard(it){
+  const d = document.createElement('div');
+  d.className = 'pdfcard';
+  const label = DOC[it.t]?.label || it.t;
+  const size = it.z ? (it.z >= 1000 ? `${(it.z / 1024).toFixed(1)} MB` : `${Math.round(it.z)} KB`) : '';
+  d.innerHTML = `
+    <div class="pc-head"><span class="badge ${(it.t || '').toLowerCase()}">${esc(it.t)}</span>${esc(label)}<span class="sp"></span><span class="faint">${size}</span></div>
+    <div class="pc-title">${esc(it.ti || label)}</div>
+    <div class="pc-actions">
+      <a class="pc-btn pri" href="${esc(it.f)}" target="_blank" rel="noopener">📖 Open PDF</a>
+      <a class="pc-btn" href="${esc(it.f)}" download>⬇ Save</a>
+      ${it.o ? `<a class="pc-btn" href="${esc(it.o)}" target="_blank" rel="noopener">🌐 Official</a>` : ''}
+    </div>`;
+  return d;
+}
 function frameFor(it, side){
+  if (mobilePDF) return pdfCard(it);
   const f = document.createElement('div');
   f.className = 'frame' + (side ? ` split ${side}` : '');
   const label = DOC[it.t]?.label || it.t;
@@ -660,6 +699,10 @@ function frameFor(it, side){
   return f;
 }
 function openViewer(x, second){
+  // Phones/iPads: open a single paper straight in the native full-screen viewer
+  // (an iframe there only shows page 1 or a grey placeholder).
+  if (mobilePDF && !second){ window.open(x.f, '_blank'); return; }
+
   const frames = $('#frames'); frames.innerHTML = '';
   frames.style.setProperty('--split', '50%');
   const badge = $('#vBadge');
@@ -671,10 +714,12 @@ function openViewer(x, second){
 
   if (second){
     frames.appendChild(frameFor(x, 'left'));
-    const div = document.createElement('div');
-    div.className = 'divider'; div.title = 'Drag to resize';
-    div.onpointerdown = () => { dragging = true; };
-    frames.appendChild(div);
+    if (!mobilePDF){
+      const div = document.createElement('div');
+      div.className = 'divider'; div.title = 'Drag to resize';
+      div.onpointerdown = () => { dragging = true; };
+      frames.appendChild(div);
+    }
     frames.appendChild(frameFor(second, 'right'));
   } else {
     frames.appendChild(frameFor(x, ''));
@@ -695,6 +740,79 @@ addEventListener('pointermove', e => {
   frames.style.setProperty('--split', Math.min(80, Math.max(20, pct)) + '%');
 });
 addEventListener('pointerup', () => { dragging = false; });
+
+/* ---------- bulk download (ZIP, store-only, no library) ---------- */
+function crc32(buf){
+  const t = crc32.t || (crc32.t = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); table[n] = c; }
+    return table;
+  })());
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) crc = t[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function makeZip(entries){
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = (((now.getFullYear() - 1980) & 0x7F) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  for (const e of entries){
+    const name = enc.encode(e.name), data = e.data, crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0, true);
+    lh.setUint16(8, 0, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const csize = central.reduce((s, p) => s + p.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+  end.setUint32(12, csize, true); end.setUint32(16, offset, true);
+  parts.push(...central, new Uint8Array(end.buffer));
+  return new Blob(parts, {type: 'application/zip'});
+}
+async function downloadAll(){
+  if (location.protocol === 'file:'){
+    toast('Bulk download works on the hosted site (or a local web server)'); return;
+  }
+  const items = papersFor().filter(x => x.p && (x.t === 'QP' || x.t === 'MS'));
+  if (!items.length){ toast('No QP / MS papers in this selection'); return; }
+  toast(`Zipping ${items.length} papers…`);
+  const entries = [];
+  let cursor = 0;
+  const workers = Array.from({length: Math.min(6, items.length)}, async () => {
+    while (cursor < items.length){
+      const x = items[cursor++];
+      try {
+        const buf = await (await fetch(x.f)).arrayBuffer();
+        if (buf.byteLength > 0) entries.push({name: (x.f.split('/').pop() || `${x.u}-${x.t}.pdf`), data: new Uint8Array(buf)});
+      } catch {}
+    }
+  });
+  await Promise.all(workers);
+  if (!entries.length){ toast('Could not read the files'); return; }
+  const zip = makeZip(entries);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zip);
+  a.download = `${S.subject.replace(/\s+/g, '-')}_${S.unit.label.replace(/\s+/g, '-')}_${S.session === 'all' ? 'all' : S.session}_QP-MS.zip`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(`Saved ${entries.length} papers (${(zip.size / 1048576).toFixed(1)} MB)`);
+}
 
 /* ---------- search ---------- */
 const UNIT_INDEX = subjects.flatMap(s => s.units.map(u => ({subj: s.name, unit: u, hay: `${s.name} ${u.label} ${[...u.codes].join(' ')}`.toLowerCase()})));

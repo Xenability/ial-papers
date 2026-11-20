@@ -40,6 +40,7 @@ global.requestAnimationFrame = fn => setTimeout(() => fn(Date.now()), 16);
 global.addEventListener = () => {};
 global.scrollY = 0;
 global.scrollTo = () => {};
+global.open = () => {};
 global.history = { replaceState(){} };
 global.IntersectionObserver = class {
   constructor(cb){ this.cb = cb; }
@@ -101,6 +102,16 @@ let code = scripts.join('\n;\n') + `
     const ss = unitSessions(S.unit);
     console.log('merged Unit 1 sessions:', ss.length, 'oldest', ss[ss.length-1], 'newest', ss[0]);
     if (!ss.includes('2026-01')) throw new Error('merged unit missing 2026 session');
+
+    // zip writer sanity (store-only)
+    const zbuf = new Uint8Array(await makeZip([{name:'a.txt', data:new TextEncoder().encode('hello world')}]).arrayBuffer());
+    if (zbuf[0] !== 0x50 || zbuf[1] !== 0x4b) throw new Error('zip header invalid');
+    console.log('zip writer OK (', zbuf.length, 'bytes)');
+
+    // mobile PDF card sanity
+    const pc = pdfCard(qp);
+    if (!pc || !String(pc.innerHTML).includes('Open PDF')) throw new Error('pdfCard broken');
+    console.log('mobile pdfCard OK');
 
     // search index sanity
     if (!UNIT_INDEX || !UNIT_INDEX.length) throw new Error('UNIT_INDEX empty');
